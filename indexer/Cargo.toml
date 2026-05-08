@@ -39,7 +39,6 @@ eframe = { version = "0.31", optional = true, default-features = false, features
 ] }
 egui = { version = "0.31", optional = true }
 image = { version = "0.25", optional = true }
-winreg = { version = "0.52", optional = true }
 
 [features]
 default = ["watch"]
@@ -55,8 +54,10 @@ tray = [
     "dep:eframe",
     "dep:egui",
     "dep:image",
-    "dep:winreg",
 ]
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
 
 [[bin]]
 name = "obsidian-indexer"
