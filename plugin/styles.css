@@ -1,0 +1,67 @@
+.vault-index-search-modal .search-input {
+	width: 100%;
+	margin-bottom: 0.75rem;
+}
+
+.vault-index-search-modal .results {
+	max-height: 55vh;
+	overflow-y: auto;
+	border-top: 1px solid var(--background-modifier-border);
+	padding-top: 0.5rem;
+}
+
+.vault-index-search-modal .result-row {
+	padding: 0.35rem 0;
+	cursor: pointer;
+	border-radius: 4px;
+}
+
+.vault-index-search-modal .result-row:hover {
+	background: var(--background-modifier-hover);
+}
+
+.vault-index-search-modal .path {
+	font-size: 0.85em;
+	color: var(--text-muted);
+	word-break: break-all;
+}
+
+.vault-index-search-modal .snippet {
+	font-size: 0.95em;
+	margin-top: 0.15rem;
+}
+
+.vault-index-search-modal .kind-filters {
+	display: flex;
+	gap: 0.4rem;
+	margin-bottom: 0.6rem;
+}
+
+.vault-index-search-modal .kind-chip {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 999px;
+	padding: 0.1rem 0.55rem;
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.vault-index-search-modal .kind-chip.active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.vault-index-search-modal .search-result-file-matched-text {
+	background: var(--text-highlight-bg, var(--background-modifier-hover));
+	color: var(--text-normal);
+	font-weight: 600;
+	border-radius: 3px;
+	padding: 0 1px;
+}
+
+.vault-index-search-modal .hint {
+	font-size: 0.8em;
+	color: var(--text-muted);
+	margin-bottom: 0.5rem;
+}

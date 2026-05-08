@@ -1,0 +1,51 @@
+name: Release CLI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: obsidian-indexer-linux-x64
+          - os: windows-latest
+            asset: obsidian-indexer-windows-x64.exe
+          - os: macos-latest
+            asset: obsidian-indexer-darwin-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build -p obsidian-indexer --release --all-features
+      - name: Prepare asset (Unix)
+        if: runner.os != 'Windows'
+        run: cp target/release/obsidian-indexer ${{ matrix.asset }}
+      - name: Prepare asset (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: cp target/release/obsidian-indexer.exe ${{ matrix.asset }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: assets/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

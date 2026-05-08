@@ -1,0 +1,72 @@
+[package]
+name = "obsidian-indexer"
+version = "0.1.0"
+edition = "2021"
+description = "Index Obsidian vaults into SQLite FTS4 for fast search"
+
+[dependencies]
+anyhow = "1"
+blake3 = "1"
+clap = { version = "4", features = ["derive"] }
+html-escape = "0.2"
+ignore = "0.4"
+pulldown-cmark = "0.12"
+rayon = "1"
+regex = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+zip = "2"
+
+# EPUB / DOCX / PDF
+epub = "2"
+
+pdfium-render = { version = "0.8", features = ["sync"] }
+
+notify = { version = "6", optional = true }
+notify-debouncer-mini = { version = "0.4", optional = true }
+
+# Icône zone de notification (Windows / Linux / macOS)
+tao = { version = "0.34", optional = true }
+tray-icon = { version = "0.22", optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+dirs = { version = "6", optional = true }
+rfd = { version = "0.15", optional = true }
+eframe = { version = "0.31", optional = true, default-features = false, features = [
+    "default_fonts",
+    "glow",
+] }
+egui = { version = "0.31", optional = true }
+image = { version = "0.25", optional = true }
+winreg = { version = "0.52", optional = true }
+
+[features]
+default = ["watch"]
+watch = ["dep:notify", "dep:notify-debouncer-mini"]
+tray = [
+    "watch",
+    "dep:tao",
+    "dep:tray-icon",
+    "dep:serde",
+    "dep:serde_json",
+    "dep:dirs",
+    "dep:rfd",
+    "dep:eframe",
+    "dep:egui",
+    "dep:image",
+    "dep:winreg",
+]
+
+[[bin]]
+name = "obsidian-indexer"
+path = "src/main.rs"
+
+[[bin]]
+name = "obsidian-indexer-tray"
+path = "src/bin/tray.rs"
+required-features = ["tray"]
+
+[lib]
+name = "obsidian_indexer"
+path = "src/lib.rs"

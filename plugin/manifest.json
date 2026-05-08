@@ -1,0 +1,9 @@
+{
+	"id": "vault-index-search",
+	"name": "Vault index search",
+	"version": "0.1.0",
+	"minAppVersion": "1.5.12",
+	"description": "Recherche plein texte dans le vault via SQLite FTS4 (index construit par le CLI obsidian-indexer).",
+	"author": "",
+	"isDesktopOnly": false
+}
