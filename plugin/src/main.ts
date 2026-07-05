@@ -12,9 +12,6 @@ import {
 } from "obsidian";
 import initSqlJs, { Database } from "sql.js";
 import sqlWasmBinary from "./sqlWasm";
-import { spawn } from "child_process";
-import { mkdirSync, writeFileSync } from "fs";
-import path from "path";
 
 interface VaultIndexSettings {
 	dbRelativePath: string;
@@ -110,38 +107,53 @@ class VaultIndexSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		new Setting(containerEl)
-			.setName("Chemin exécutable tray")
-			.setDesc(
-				"Optionnel. Chemin absolu vers obsidian-indexer-tray(.exe). Si vide, tentative via PATH.",
-			)
-			.addText((t) =>
-				t
-					.setValue(this.plugin.settings.trayExecutablePath)
-					.onChange(async (v) => {
-						this.plugin.settings.trayExecutablePath = v.trim();
-						await this.plugin.saveSettings();
-					}),
-			);
+		if (Platform.isDesktopApp) {
+			new Setting(containerEl)
+				.setName("Chemin exécutable tray")
+				.setDesc(
+					"Optionnel. Chemin absolu vers obsidian-indexer-tray(.exe). Si vide, tentative via PATH.",
+				)
+				.addText((t) =>
+					t
+						.setValue(this.plugin.settings.trayExecutablePath)
+						.onChange(async (v) => {
+							this.plugin.settings.trayExecutablePath = v.trim();
+							await this.plugin.saveSettings();
+						}),
+				);
 
-		new Setting(containerEl)
-			.setName("Actions indexeur")
-			.setDesc("Lancer le tray, demander un rebuild et lire un bilan rapide.")
-			.addButton((b) =>
-				b.setButtonText("Lancer tray").onClick(async () => {
-					await this.startTray();
-				}),
-			)
-			.addButton((b) =>
-				b.setButtonText("Refaire index").onClick(async () => {
-					await this.requestRebuild();
-				}),
-			)
-			.addButton((b) =>
-				b.setButtonText("Rafraîchir bilan").onClick(async () => {
-					await this.refreshSummary();
-				}),
-			);
+			new Setting(containerEl)
+				.setName("Actions indexeur")
+				.setDesc("Lancer le tray, demander un rebuild et lire un bilan rapide.")
+				.addButton((b) =>
+					b.setButtonText("Lancer tray").onClick(async () => {
+						await this.startTray();
+					}),
+				)
+				.addButton((b) =>
+					b.setButtonText("Refaire index").onClick(async () => {
+						await this.requestRebuild();
+					}),
+				)
+				.addButton((b) =>
+					b.setButtonText("Rafraîchir bilan").onClick(async () => {
+						await this.refreshSummary();
+					}),
+				);
+		} else {
+			containerEl.createEl("p", {
+				text: "Le tray et le rebuild automatique ne sont disponibles que dans l’app Obsidian bureau.",
+				cls: "hint",
+			});
+			new Setting(containerEl)
+				.setName("Bilan index")
+				.setDesc("Mettre à jour l’aperçu du fichier SQLite.")
+				.addButton((b) =>
+					b.setButtonText("Rafraîchir bilan").onClick(async () => {
+						await this.refreshSummary();
+					}),
+				);
+		}
 
 		containerEl.createEl("h3", { text: "Bilan index" });
 		this.summaryEl = containerEl.createDiv({ cls: "hint" });
@@ -157,7 +169,12 @@ class VaultIndexSettingTab extends PluginSettingTab {
 	}
 
 	private async startTray(): Promise<void> {
+		if (!Platform.isDesktopApp) {
+			new Notice("Le tray n’est disponible que sur Obsidian bureau.");
+			return;
+		}
 		try {
+			const { spawn } = await import("child_process");
 			const exe = this.resolveTrayExecutable();
 			spawn(exe, [], {
 				detached: true,
@@ -172,10 +189,16 @@ class VaultIndexSettingTab extends PluginSettingTab {
 	}
 
 	private async requestRebuild(): Promise<void> {
+		if (!Platform.isDesktopApp) {
+			new Notice("Le rebuild via fichier flag n’est disponible que sur bureau.");
+			return;
+		}
 		try {
-			const flag = trayForceRebuildFlagPath();
-			mkdirSync(path.dirname(flag), { recursive: true });
-			writeFileSync(flag, "rebuild");
+			const p = await import("path");
+			const fs = await import("fs");
+			const flag = trayForceRebuildFlagPath(p);
+			fs.mkdirSync(p.dirname(flag), { recursive: true });
+			fs.writeFileSync(flag, "rebuild");
 			new Notice("Demande de rebuild envoyée au tray.");
 		} catch (e) {
 			console.error(e);
@@ -364,21 +387,22 @@ function buildSnippetFromBody(body: string, terms: string[]): string {
 	return `${prefix}${cleaned.slice(start, end)}${suffix}`;
 }
 
-function trayControlDir(): string {
+/** Utilisé uniquement sur bureau (`requestRebuild`), avec `path` chargé dynamiquement. */
+function trayControlDir(p: typeof import("path")): string {
 	const home = process.env.HOME ?? process.env.USERPROFILE ?? "";
 	if (Platform.isWin) {
-		const appData = process.env.APPDATA ?? path.join(home, "AppData", "Roaming");
-		return path.join(appData, "obsidian-indexer");
+		const appData = process.env.APPDATA ?? p.join(home, "AppData", "Roaming");
+		return p.join(appData, "obsidian-indexer");
 	}
 	if (Platform.isMacOS) {
-		return path.join(home, "Library", "Application Support", "obsidian-indexer");
+		return p.join(home, "Library", "Application Support", "obsidian-indexer");
 	}
-	const xdg = process.env.XDG_CONFIG_HOME ?? path.join(home, ".config");
-	return path.join(xdg, "obsidian-indexer");
+	const xdg = process.env.XDG_CONFIG_HOME ?? p.join(home, ".config");
+	return p.join(xdg, "obsidian-indexer");
 }
 
-function trayForceRebuildFlagPath(): string {
-	return path.join(trayControlDir(), "force-rebuild.flag");
+function trayForceRebuildFlagPath(p: typeof import("path")): string {
+	return p.join(trayControlDir(p), "force-rebuild.flag");
 }
 
 class SearchModal extends Modal {
@@ -492,20 +516,23 @@ class SearchModal extends Modal {
 						kind: FileKind;
 					}
 				> = [];
-				stmt.bind([q, ...kinds]);
-				while (stmt.step()) {
-					const row = stmt.getAsObject();
-					const body = String(row.body ?? "");
-					const kind = String(row.kind ?? "md") as FileKind;
-					hits.push({
-						path: String(row.path ?? ""),
-						snippet: buildSnippetFromBody(body, terms),
-						body,
-						page: extractPageFromBody(body),
-						kind,
-					});
+				try {
+					stmt.bind([q, ...kinds]);
+					while (stmt.step()) {
+						const row = stmt.getAsObject();
+						const body = String(row.body ?? "");
+						const kind = String(row.kind ?? "md") as FileKind;
+						hits.push({
+							path: String(row.path ?? ""),
+							snippet: buildSnippetFromBody(body, terms),
+							body,
+							page: extractPageFromBody(body),
+							kind,
+						});
+					}
+				} finally {
+					stmt.free();
 				}
-				stmt.free();
 
 				if (hits.length === 0) {
 					resultsEl.setText("Aucun résultat.");
@@ -566,7 +593,12 @@ class SearchModal extends Modal {
 		const escaped = terms
 			.filter(Boolean)
 			.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-			.sort((a, b) => b.length - a.length);
+			.sort((a, b) => b.length - a.length)
+			.filter((t) => t.length > 0);
+		if (escaped.length === 0) {
+			el.setText(snippet);
+			return;
+		}
 		const re = new RegExp(`(${escaped.join("|")})`, "gi");
 		let last = 0;
 		for (const m of snippet.matchAll(re)) {

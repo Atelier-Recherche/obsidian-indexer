@@ -2190,9 +2190,6 @@ var sql_wasm_browser_default = __toBinary("AGFzbQEAAAABnwRFYAJ/fwF/YAF/AX9gA39/f
 var sqlWasm_default = sql_wasm_browser_default;
 
 // src/main.ts
-var import_child_process = require("child_process");
-var import_fs = require("fs");
-var import_path = __toESM(require("path"));
 var DEFAULT_SETTINGS = {
   dbRelativePath: ".obsidian-index/index.sqlite",
   trayExecutablePath: ""
@@ -2253,27 +2250,39 @@ var VaultIndexSettingTab = class extends import_obsidian.PluginSettingTab {
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Chemin ex\xE9cutable tray").setDesc(
-      "Optionnel. Chemin absolu vers obsidian-indexer-tray(.exe). Si vide, tentative via PATH."
-    ).addText(
-      (t) => t.setValue(this.plugin.settings.trayExecutablePath).onChange(async (v) => {
-        this.plugin.settings.trayExecutablePath = v.trim();
-        await this.plugin.saveSettings();
-      })
-    );
-    new import_obsidian.Setting(containerEl).setName("Actions indexeur").setDesc("Lancer le tray, demander un rebuild et lire un bilan rapide.").addButton(
-      (b) => b.setButtonText("Lancer tray").onClick(async () => {
-        await this.startTray();
-      })
-    ).addButton(
-      (b) => b.setButtonText("Refaire index").onClick(async () => {
-        await this.requestRebuild();
-      })
-    ).addButton(
-      (b) => b.setButtonText("Rafra\xEEchir bilan").onClick(async () => {
-        await this.refreshSummary();
-      })
-    );
+    if (import_obsidian.Platform.isDesktopApp) {
+      new import_obsidian.Setting(containerEl).setName("Chemin ex\xE9cutable tray").setDesc(
+        "Optionnel. Chemin absolu vers obsidian-indexer-tray(.exe). Si vide, tentative via PATH."
+      ).addText(
+        (t) => t.setValue(this.plugin.settings.trayExecutablePath).onChange(async (v) => {
+          this.plugin.settings.trayExecutablePath = v.trim();
+          await this.plugin.saveSettings();
+        })
+      );
+      new import_obsidian.Setting(containerEl).setName("Actions indexeur").setDesc("Lancer le tray, demander un rebuild et lire un bilan rapide.").addButton(
+        (b) => b.setButtonText("Lancer tray").onClick(async () => {
+          await this.startTray();
+        })
+      ).addButton(
+        (b) => b.setButtonText("Refaire index").onClick(async () => {
+          await this.requestRebuild();
+        })
+      ).addButton(
+        (b) => b.setButtonText("Rafra\xEEchir bilan").onClick(async () => {
+          await this.refreshSummary();
+        })
+      );
+    } else {
+      containerEl.createEl("p", {
+        text: "Le tray et le rebuild automatique ne sont disponibles que dans l\u2019app Obsidian bureau.",
+        cls: "hint"
+      });
+      new import_obsidian.Setting(containerEl).setName("Bilan index").setDesc("Mettre \xE0 jour l\u2019aper\xE7u du fichier SQLite.").addButton(
+        (b) => b.setButtonText("Rafra\xEEchir bilan").onClick(async () => {
+          await this.refreshSummary();
+        })
+      );
+    }
     containerEl.createEl("h3", { text: "Bilan index" });
     this.summaryEl = containerEl.createDiv({ cls: "hint" });
     this.summaryEl.setText("Chargement du bilan\u2026");
@@ -2286,9 +2295,14 @@ var VaultIndexSettingTab = class extends import_obsidian.PluginSettingTab {
     return import_obsidian.Platform.isWin ? "obsidian-indexer-tray.exe" : "obsidian-indexer-tray";
   }
   async startTray() {
+    if (!import_obsidian.Platform.isDesktopApp) {
+      new import_obsidian.Notice("Le tray n\u2019est disponible que sur Obsidian bureau.");
+      return;
+    }
     try {
+      const { spawn } = await import("child_process");
       const exe = this.resolveTrayExecutable();
-      (0, import_child_process.spawn)(exe, [], {
+      spawn(exe, [], {
         detached: true,
         stdio: "ignore",
         windowsHide: true
@@ -2300,10 +2314,16 @@ var VaultIndexSettingTab = class extends import_obsidian.PluginSettingTab {
     }
   }
   async requestRebuild() {
+    if (!import_obsidian.Platform.isDesktopApp) {
+      new import_obsidian.Notice("Le rebuild via fichier flag n\u2019est disponible que sur bureau.");
+      return;
+    }
     try {
-      const flag = trayForceRebuildFlagPath();
-      (0, import_fs.mkdirSync)(import_path.default.dirname(flag), { recursive: true });
-      (0, import_fs.writeFileSync)(flag, "rebuild");
+      const p = await import("path");
+      const fs = await import("fs");
+      const flag = trayForceRebuildFlagPath(p);
+      fs.mkdirSync(p.dirname(flag), { recursive: true });
+      fs.writeFileSync(flag, "rebuild");
       new import_obsidian.Notice("Demande de rebuild envoy\xE9e au tray.");
     } catch (e) {
       console.error(e);
@@ -2441,20 +2461,20 @@ function buildSnippetFromBody(body, terms) {
   const suffix = end < cleaned.length ? "\u2026" : "";
   return `${prefix}${cleaned.slice(start, end)}${suffix}`;
 }
-function trayControlDir() {
+function trayControlDir(p) {
   const home = process.env.HOME ?? process.env.USERPROFILE ?? "";
   if (import_obsidian.Platform.isWin) {
-    const appData = process.env.APPDATA ?? import_path.default.join(home, "AppData", "Roaming");
-    return import_path.default.join(appData, "obsidian-indexer");
+    const appData = process.env.APPDATA ?? p.join(home, "AppData", "Roaming");
+    return p.join(appData, "obsidian-indexer");
   }
   if (import_obsidian.Platform.isMacOS) {
-    return import_path.default.join(home, "Library", "Application Support", "obsidian-indexer");
+    return p.join(home, "Library", "Application Support", "obsidian-indexer");
   }
-  const xdg = process.env.XDG_CONFIG_HOME ?? import_path.default.join(home, ".config");
-  return import_path.default.join(xdg, "obsidian-indexer");
+  const xdg = process.env.XDG_CONFIG_HOME ?? p.join(home, ".config");
+  return p.join(xdg, "obsidian-indexer");
 }
-function trayForceRebuildFlagPath() {
-  return import_path.default.join(trayControlDir(), "force-rebuild.flag");
+function trayForceRebuildFlagPath(p) {
+  return p.join(trayControlDir(p), "force-rebuild.flag");
 }
 var SearchModal = class extends import_obsidian.Modal {
   plugin;
@@ -2552,20 +2572,23 @@ var SearchModal = class extends import_obsidian.Modal {
 					  LIMIT 80`
         );
         const hits = [];
-        stmt.bind([q, ...kinds]);
-        while (stmt.step()) {
-          const row = stmt.getAsObject();
-          const body = String(row.body ?? "");
-          const kind = String(row.kind ?? "md");
-          hits.push({
-            path: String(row.path ?? ""),
-            snippet: buildSnippetFromBody(body, terms),
-            body,
-            page: extractPageFromBody(body),
-            kind
-          });
+        try {
+          stmt.bind([q, ...kinds]);
+          while (stmt.step()) {
+            const row = stmt.getAsObject();
+            const body = String(row.body ?? "");
+            const kind = String(row.kind ?? "md");
+            hits.push({
+              path: String(row.path ?? ""),
+              snippet: buildSnippetFromBody(body, terms),
+              body,
+              page: extractPageFromBody(body),
+              kind
+            });
+          }
+        } finally {
+          stmt.free();
         }
-        stmt.free();
         if (hits.length === 0) {
           resultsEl.setText("Aucun r\xE9sultat.");
           return;
@@ -2613,7 +2636,11 @@ var SearchModal = class extends import_obsidian.Modal {
       el.setText(snippet);
       return;
     }
-    const escaped = terms.filter(Boolean).map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).sort((a, b) => b.length - a.length);
+    const escaped = terms.filter(Boolean).map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).sort((a, b) => b.length - a.length).filter((t) => t.length > 0);
+    if (escaped.length === 0) {
+      el.setText(snippet);
+      return;
+    }
     const re = new RegExp(`(${escaped.join("|")})`, "gi");
     let last = 0;
     for (const m of snippet.matchAll(re)) {

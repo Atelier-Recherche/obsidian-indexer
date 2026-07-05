@@ -99,6 +99,19 @@ Activer « Vault Index Search » dans les extensions Obsidian et configurer le c
 - [ ] Mode “priorité récence” / pondération configurable des résultats
 - [ ] Export/import de configuration (plugin + tray)
 
+## Plugin Obsidian — catalogue
+
+| Élément | Détail |
+| --- | --- |
+| **ID plugin** | `vault-index-search` |
+| **Dépôt** | [github.com/Atelier-Recherche/obsidian-indexer](https://github.com/Atelier-Recherche/obsidian-indexer) |
+| **Licence** | MIT — [LICENSE](LICENSE) |
+| **Réseau** | non pour le plugin — lit `index.sqlite` dans le coffre |
+| **Fichiers hors vault** | le CLI indexeur accède au vault et peut lancer le tray ; le plugin lit la base SQLite (chemin configurable, souvent dans le vault) |
+| **CLI associé** | binaire Rust `obsidian-indexer` (releases séparées, tags `v*`) |
+| **Télémétrie / mise à jour auto** | non |
+| **Release plugin** | `.\Release-Plugin.ps1` (tags semver sans `v`, ex. `0.1.0`) |
+
 ## Développement et CI
 
 Les workflows GitHub Actions dans **`.github/workflows/`** exécutent les tests Rust et la build du plugin. Consulter ces fichiers pour les commandes exactes utilisées en intégration continue.

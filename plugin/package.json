@@ -1,7 +1,7 @@
 {
 	"name": "vault-index-search",
 	"version": "0.1.0",
-	"description": "Recherche dans l'index SQLite FTS4 (généré par obsidian-indexer).",
+	"description": "Recherche dans l'index SQLite FTS4 (généré par l'indexeur CLI associé).",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

@@ -1,9 +1,10 @@
 {
 	"id": "vault-index-search",
-	"name": "Vault index search",
+	"name": "Vault Index Search",
 	"version": "0.1.0",
 	"minAppVersion": "1.5.12",
-	"description": "Recherche plein texte dans le vault via SQLite FTS4 (index construit par le CLI obsidian-indexer).",
-	"author": "",
+	"description": "Recherche plein texte dans le vault via SQLite FTS4 (index construit par l'indexeur CLI associé).",
+	"author": "l'Atelier",
+	"authorUrl": "https://atelier.atechnologie.fr/activites/programmation-doutils/",
 	"isDesktopOnly": false
 }
