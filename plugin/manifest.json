@@ -1,7 +1,7 @@
 {
 	"id": "vault-index-search",
 	"name": "Vault Index Search",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"minAppVersion": "1.5.12",
 	"description": "Recherche plein texte dans le vault via SQLite FTS4 (index construit par l'indexeur CLI associé).",
 	"author": "l'Atelier",
