@@ -1,6 +1,6 @@
 {
 	"name": "vault-index-search",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Recherche dans l'index SQLite FTS4 (généré par l'indexeur CLI associé).",
 	"main": "main.js",
 	"scripts": {
