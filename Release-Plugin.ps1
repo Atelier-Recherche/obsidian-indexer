@@ -53,6 +53,12 @@ function Get-PluginRepoRelativePath {
     return "$PluginSubdir/$FileName"
 }
 
+function Sync-CatalogRootManifest {
+    foreach ($name in @('manifest.json', 'versions.json')) {
+        Copy-Item -LiteralPath (Join-Path $pluginDir $name) -Destination (Join-Path $repoRoot $name) -Force
+    }
+}
+
 $repoRoot = $PSScriptRoot
 $pluginDir = Join-Path $repoRoot $PluginSubdir
 Set-Location -LiteralPath $repoRoot
@@ -119,13 +125,17 @@ if (-not (Test-Path (Join-Path $pluginDir 'main.js'))) { throw 'plugin/main.js a
 & git rev-parse --verify --quiet "refs/tags/$newVersion" 2>$null | Out-Null
 if ($LASTEXITCODE -eq 0) { throw "Tag $newVersion existe déjà." }
 
+Sync-CatalogRootManifest
+
 & git add `
     (Get-PluginRepoRelativePath 'package.json') `
     (Get-PluginRepoRelativePath 'manifest.json') `
     (Get-PluginRepoRelativePath 'versions.json') `
     (Get-PluginRepoRelativePath 'styles.css') `
+    'manifest.json' `
+    'versions.json' `
     $ReleaseNotesFile
-if ($IncludeMainJsInCommit) { & git add (Get-PluginRepoRelativePath 'main.js') }
+if ($IncludeMainJsInCommit) { & git add -f (Get-PluginRepoRelativePath 'main.js') }
 
 & git commit -m "release(plugin): $newVersion"
 & git tag -a $newVersion -m $newVersion
